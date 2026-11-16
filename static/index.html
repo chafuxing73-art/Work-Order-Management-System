@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e42d2">
+<title>锦联国际 · 楼层报修</title>
+<link rel="icon" href="/favicon.ico?v=1" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=1">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=1">
+<link rel="icon" type="image/png" sizes="48x48" href="/static/icons/favicon-48.png?v=1">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png?v=1">
+<link rel="manifest" href="/static/manifest.webmanifest?v=1">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="mobile-wrap" id="app">
+
+  <div class="m-header">
+    <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+    <div>
+      <div class="title" id="hd-title">锦联国际 · 楼层报修</div>
+      <div class="sub" id="hd-sub">扫码报修，进度可查</div>
+    </div>
+    <div class="floor-chip" id="hd-floor">2F</div>
+    <button class="bell" onclick="switchTab('notif')" aria-label="消息">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <i id="bell-dot" class="hidden"></i>
+    </button>
+  </div>
+
+  <div class="m-tabs" id="tabs"></div>
+
+  <div id="alert-bar" class="alert-bar hidden" onclick="alertGo()">
+    <i class="ic"></i><span id="alert-text">有新工单待接</span><span class="go">查看工单池 ›</span>
+  </div>
+
+  <div class="m-body">
+
+    <!-- 首次绑定 -->
+    <div class="panel" id="panel-bind">
+      <div class="bind-wrap" style="margin:24px auto">
+        <div class="card">
+          <h3 style="font-size:17px;margin-bottom:6px">先做个身份登记</h3>
+          <p class="muted small" style="margin-top:0">仅内部员工使用，用于工单进度通知和联系。信息只保存在公司内网服务器。</p>
+          <div class="divider"></div>
+          <label class="field"><span class="lb">姓名<em>*</em></span><input type="text" id="bind-name" placeholder="与通讯录一致" autocomplete="off"></label>
+          <label class="field"><span class="lb">部门<em>*</em></span><input type="text" id="bind-dept" list="dept-list" placeholder="例如 市场部" autocomplete="off"></label>
+          <label class="field"><span class="lb">手机号<em>*</em></span><input type="tel" id="bind-phone" placeholder="方便师傅联系" autocomplete="off"></label>
+          <button class="btn primary block lg" onclick="doBind()">登记并开始使用</button>
+          <p class="hint" style="text-align:center">再次扫码无需重复填写</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 报修 -->
+    <div class="panel" id="panel-new">
+      <form id="form-new" onsubmit="return false">
+        <div class="sec">
+          <div class="sec-title">问题在哪</div>
+          <label class="field"><span class="lb">楼层<em>*</em></span><select id="f-floor"></select></label>
+          <label class="field" style="margin-bottom:6px"><span class="lb">具体位置<em>*</em></span>
+            <input type="text" id="f-location" placeholder="例如 东侧茶水间 / A 区工位 12" maxlength="60"></label>
+          <div id="loc-tags"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-title">什么问题</div>
+          <div class="cat-grid" id="cat-grid"></div>
+          <div style="margin-top:16px">
+            <div class="sec-title" style="margin-bottom:9px">紧急程度</div>
+            <div class="urg-grid" id="urg-grid"></div>
+          </div>
+          <label class="field" style="margin-top:16px;margin-bottom:0"><span class="lb">问题描述<em>*</em></span>
+            <textarea id="f-desc" placeholder="简单描述故障现象，例如：水龙头持续漏水，地面已有积水" maxlength="500"></textarea>
+            <div class="hint">至少 5 个字，描述越清楚师傅越好准备工具</div></label>
+        </div>
+
+        <div class="sec">
+          <div class="sec-title">现场照片 <span class="muted small" style="font-weight:400">必传，最多 6 张</span></div>
+          <div class="photo-grid" id="photo-grid"></div>
+          <input type="file" id="file-input" accept="image/*" multiple class="hidden" onchange="onFiles(event)">
+          <div class="hint">照片会自动压缩，节省流量</div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-title">联系信息</div>
+          <label class="field"><span class="lb">姓名<em>*</em></span><input type="text" id="f-contact" maxlength="20" placeholder="请填写姓名"></label>
+          <label class="field"><span class="lb">部门<em>*</em></span>
+            <input type="text" id="f-dept" list="dept-list" placeholder="例如 行政部" maxlength="30" autocomplete="off">
+            <datalist id="dept-list"></datalist></label>
+          <label class="field" style="margin-bottom:0"><span class="lb">手机号<em>*</em></span>
+            <input type="tel" id="f-phone" placeholder="方便师傅到场前联系" maxlength="20"></label>
+          <div class="hint hidden" id="identity-hint" style="margin-top:8px">首次提交后本机自动记住姓名和部门，下次扫码直接填问题即可。</div>
+        </div>
+
+        <button class="btn accent block lg" id="btn-submit" onclick="submitTicket()">提交工单</button>
+        <p class="hint" style="text-align:center;margin-top:10px">提交后可在「我的工单」随时查看进度</p>
+      </form>
+    </div>
+
+    <!-- 提交成功 -->
+    <div class="panel" id="panel-success">
+      <div class="card success-box">
+        <div class="tick">✓</div>
+        <h3>工单已提交</h3>
+        <p class="muted" id="succ-no" style="font-family:ui-monospace,Consolas,monospace"></p>
+        <p class="muted small" id="succ-tip">行政会尽快派单，进度会在这里同步给你</p>
+        <div class="row" style="justify-content:center;gap:10px;margin-top:20px">
+          <button class="btn" onclick="resetForm()">再报一单</button>
+          <button class="btn primary" onclick="switchTab('mine')">查看进度</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-mine"><div id="mine-list"></div></div>
+    <div class="panel" id="panel-pool"><div id="pool-list"></div></div>
+    <div class="panel" id="panel-tasks"><div id="tasks-list"></div></div>
+    <div class="panel" id="panel-notif">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <span class="muted small">最近 50 条消息</span>
+        <button class="btn sm ghost" onclick="readAll()">全部标为已读</button>
+      </div>
+      <div id="notif-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>window.WO_TOKEN_KEY = 'wo_staff_token';</script>
+<script src="/static/common.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

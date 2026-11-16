@@ -1,0 +1,76 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "base_url": ""
+  },
+  "company": {
+    "name": "示例公司",
+    "full_name": "请填写贵公司全称",
+    "system_name": "楼层报修工单系统",
+    "slogan": "扫码报修，进度可查"
+  },
+  "floors": [
+    "2F",
+    "3F",
+    "4F",
+    "5F",
+    "6F"
+  ],
+  "categories": [
+    { "id": "water", "name": "水电", "mark": "水", "color": "#2b6cb0", "urgency": "urgent", "enabled": true },
+    { "id": "hvac", "name": "空调", "mark": "空", "color": "#0e9aa7", "urgency": "normal", "enabled": true },
+    { "id": "light", "name": "灯具照明", "mark": "灯", "color": "#d69e2e", "urgency": "normal", "enabled": true },
+    { "id": "door", "name": "门窗锁具", "mark": "门", "color": "#7c5cd6", "urgency": "normal", "enabled": true },
+    { "id": "furniture", "name": "办公家具/桌椅", "mark": "具", "color": "#b7791f", "urgency": "low", "enabled": true },
+    { "id": "cleaning", "name": "保洁卫生", "mark": "洁", "color": "#16a34a", "urgency": "low", "enabled": true },
+    { "id": "meeting", "name": "会议室设备", "mark": "会", "color": "#db2777", "urgency": "urgent", "enabled": true },
+    { "id": "access", "name": "门禁/钥匙", "mark": "禁", "color": "#4b5563", "urgency": "normal", "enabled": true },
+    { "id": "other", "name": "其他/咨询", "mark": "他", "color": "#6b7280", "urgency": "normal", "enabled": true }
+  ],
+  "urgency": [
+    {
+      "id": "urgent",
+      "name": "紧急",
+      "desc": "影响正常办公/存在安全隐患",
+      "response_min": 15,
+      "resolve_min": 240
+    },
+    {
+      "id": "normal",
+      "name": "一般",
+      "desc": "需要处理但不影响工作",
+      "response_min": 120,
+      "resolve_min": 1440
+    },
+    {
+      "id": "low",
+      "name": "不急",
+      "desc": "可安排时间处理",
+      "response_min": 240,
+      "resolve_min": 4320
+    }
+  ],
+  "sla": {
+    "auto_close_hours": 48,
+    "check_interval_sec": 60
+  },
+  "wecom": {
+    "enabled": false,
+    "corp_id": "",
+    "agent_id": "",
+    "corp_secret": "",
+    "to_dispatchers": true,
+    "notify_new_ticket_to_workers": true,
+    "contact_secret": "",
+    "public_base_url": "",
+    "oauth_enabled": false
+  },
+  "auth": {
+    "admin_username": "admin",
+    "default_password": "123456",
+    "session_days": 30,
+    "admin_initialized": false
+  },
+  "ticket_prefix": "WO"
+}

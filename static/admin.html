@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0e42d2">
+<title>工单管理后台</title>
+<link rel="icon" href="/favicon.ico?v=1" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=1">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=1">
+<link rel="icon" type="image/png" sizes="48x48" href="/static/icons/favicon-48.png?v=1">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png?v=1">
+<link rel="manifest" href="/static/manifest.webmanifest?v=1">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<!-- 登录 -->
+<div class="login-wrap" id="login-view">
+  <div class="login-card">
+    <div class="lg">
+      <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+      <div><h2>工单管理后台</h2><div class="muted small">浙江锦联国际物流有限公司</div></div>
+    </div>
+    <label class="field"><span class="lb">账号</span><input type="text" id="lg-user" placeholder="工号 / 管理员账号" autocomplete="username"></label>
+    <label class="field"><span class="lb">密码</span><input type="password" id="lg-pwd" placeholder="密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></label>
+    <button class="btn primary block lg" onclick="doLogin()">登录</button>
+    <p class="hint" style="text-align:center;margin-top:14px">初始管理员 admin / 123456，登录后请立即修改密码</p>
+    <div class="divider"></div>
+    <p class="hint" style="text-align:center;margin:0">同事扫码提单请访问 <a id="lg-link" href="/" target="_blank">员工端首页</a></p>
+  </div>
+</div>
+
+<!-- 主体 -->
+<div class="admin-wrap hidden" id="main-view">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+      <div><div class="t">工单管理后台</div><div class="s">锦联国际物流</div></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="foot">内网部署 · 数据本地保存<br><a onclick="doLogout()">退出登录</a></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h2 id="page-title">工单管理</h2>
+      <div class="user">
+        <span id="top-user"></span>
+        <div class="avatar" id="top-avatar"></div>
+        <button class="btn sm ghost" onclick="changePwd()">修改密码</button>
+        <button class="btn sm ghost" onclick="doLogout()">退出</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- 工单管理 -->
+      <div class="page on" id="page-tickets">
+        <div class="filters">
+          <select id="fl-status"><option value="">全部状态</option></select>
+          <select id="fl-floor"><option value="">全部楼层</option></select>
+          <select id="fl-category"><option value="">全部类型</option></select>
+          <select id="fl-urgency"><option value="">全部紧急度</option></select>
+          <input type="date" id="fl-from" title="起始日期">
+          <input type="date" id="fl-to" title="结束日期">
+          <input type="text" id="fl-q" placeholder="搜索工单号/描述/位置/提单人" onkeydown="if(event.key==='Enter')loadTickets()">
+          <label class="small row" style="gap:5px;cursor:pointer"><input type="checkbox" id="fl-overdue" style="width:auto"> 只看超时</label>
+          <button class="btn primary sm" onclick="loadTickets()">查询</button>
+          <button class="btn sm" onclick="resetFilters()">重置</button>
+          <span class="spacer"></span>
+          <button class="btn sm" onclick="exportCsv()">导出 Excel(CSV)</button>
+        </div>
+        <div id="ticket-count" class="small muted" style="margin-bottom:8px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>工单号</th><th>状态</th><th>楼层 / 位置</th><th>类型</th><th>紧急度</th>
+              <th>提单人</th><th>接单人</th><th>提交时间</th><th>时限</th></tr></thead>
+            <tbody id="ticket-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 统计看板 -->
+      <div class="page" id="page-dashboard">
+        <div class="filters">
+          <span class="small muted">统计区间</span>
+          <input type="date" id="st-from"><input type="date" id="st-to">
+          <button class="btn primary sm" onclick="loadStats()">刷新</button>
+          <button class="btn sm" onclick="quickRange(7)">近 7 天</button>
+          <button class="btn sm" onclick="quickRange(30)">近 30 天</button>
+          <button class="btn sm" onclick="quickRange(0)">全部</button>
+        </div>
+        <div class="stat-grid" id="stat-grid"></div>
+        <div class="two-col">
+          <div class="box"><h3>14 天工单趋势</h3><div class="trend" id="trend"></div></div>
+          <div class="box"><h3>状态分布</h3><div id="bars-status"></div></div>
+          <div class="box"><h3>按楼层</h3><div id="bars-floor"></div></div>
+          <div class="box"><h3>按报修类型</h3><div id="bars-category"></div></div>
+          <div class="box"><h3>按处理人</h3><div id="bars-assignee"></div></div>
+          <div class="box"><h3>按紧急程度</h3><div id="bars-urgency"></div></div>
+        </div>
+      </div>
+
+      <!-- 员工与权限 -->
+      <div class="page" id="page-users">
+        <div class="notice">同事扫码只需填<b>姓名 + 部门 + 手机号</b>，不填工号；首次提交时自动建档，之后本机记住。若在这里<b>预建账号并填好手机号</b>，对方扫码会按手机号自动认领并继承角色 —— 给师傅预建账号时填手机号，他就能直接进工作台抢单。新建或重置后的账号密码统一为 <b>123456</b>，登录后请自行修改。</div>
+        <div class="filters">
+          <input type="text" id="us-q" placeholder="搜索工号 / 姓名 / 部门" onkeydown="if(event.key==='Enter')loadUsers()">
+          <button class="btn primary sm" onclick="loadUsers()">查询</button>
+          <span class="spacer"></span>
+          <button class="btn accent sm" onclick="editUser(null)">+ 新增员工</button>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>工号</th><th>姓名</th><th>部门</th><th>手机号</th><th>角色</th>
+            <th>企微 UserID</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody id="user-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- 二维码 -->
+      <div class="page" id="page-qr">
+        <div class="box">
+          <h3>楼层二维码</h3>
+          <p class="muted small" style="margin-top:-6px">每个楼层一张码，二维码里已写入楼层参数，同事扫码后自动带出位置，不用手选。</p>
+          <div class="filters" style="margin-bottom:6px">
+            <span class="small">服务地址</span>
+            <input type="text" id="qr-base" style="min-width:280px" placeholder="http://192.168.1.10:8080">
+            <button class="btn primary sm" onclick="renderQr()">生成二维码</button>
+            <button class="btn sm" onclick="downloadAllPosters()">下载全部海报</button>
+          </div>
+          <div class="hint" id="qr-hint"></div>
+        </div>
+        <div class="qr-grid" id="qr-grid"></div>
+      </div>
+
+      <!-- 系统设置 -->
+      <div class="page" id="page-settings">
+        <div class="notice" id="cfg-notice"></div>
+        <div class="settings-grid">
+          <div class="box">
+            <h3>基本信息</h3>
+            <label class="field"><span class="lb">公司名称<span class="muted">（二维码海报用简称）</span></span><input type="text" id="cf-company"></label>
+            <label class="field"><span class="lb">公司全称</span><input type="text" id="cf-company-full"></label>
+            <label class="field"><span class="lb">系统名称</span><input type="text" id="cf-system"></label>
+            <label class="field"><span class="lb">标语</span><input type="text" id="cf-slogan"></label>
+            <label class="field"><span class="lb">楼层（英文逗号分隔）</span><input type="text" id="cf-floors"></label>
+            <p class="hint">修改楼层后，二维码页面会同步生成对应数量的码。</p>
+          </div>
+          <div class="box">
+            <h3>SLA 时限（分钟）</h3>
+            <div id="cf-urgency"></div>
+            <label class="field" style="margin-top:12px"><span class="lb">待验收自动完成（小时）</span>
+              <input type="number" id="cf-autoclose" min="1" max="720"></label>
+            <p class="hint">接单人提交完工后进入「待验收」，提单人可确认；超过设定小时数无异议，系统自动置为已完成。</p>
+          </div>
+        </div>
+
+        <div class="box">
+          <h3>报修类型</h3>
+          <div class="table-wrap" style="box-shadow:none">
+            <table class="cfg-table"><thead><tr><th>名称</th><th>图标字</th><th>颜色</th><th>默认紧急度</th><th>启用</th><th></th></tr></thead>
+              <tbody id="cfg-cat-tbody"></tbody></table>
+          </div>
+          <button class="btn sm" style="margin-top:10px" onclick="addCatRow()">+ 添加类型</button>
+        </div>
+
+        <div class="box">
+          <h3>企业微信应用消息</h3>
+          <div class="notice warn">内网服务器需要能访问 qyapi.weixin.qq.com 才能推送。员工需在「员工与权限」里填写企微 UserID；未绑定的人只会收到系统内消息。新工单会同时提醒全部在职处理人，方便抢单。不配置企微也可以正常使用全流程（系统内消息 + 页面提醒）。</div>
+          <div class="settings-grid">
+            <div>
+              <label class="field"><span class="lb">启用推送</span>
+                <select id="cf-wecom-enabled"><option value="0">关闭</option><option value="1">开启</option></select></label>
+              <label class="field"><span class="lb">新工单提醒处理人</span>
+                <select id="cf-wecom-notify-workers"><option value="1">开启（抢单模式推荐）</option><option value="0">仅提醒派单员</option></select></label>
+              <label class="field"><span class="lb">CorpID</span><input type="text" id="cf-corp" placeholder="企业微信 企业ID"></label>
+              <label class="field"><span class="lb">AgentID</span><input type="text" id="cf-agent" placeholder="自建应用的 AgentId"></label>
+            </div>
+            <div>
+              <label class="field"><span class="lb">CorpSecret</span><input type="text" id="cf-secret" placeholder="自建应用的 Secret"></label>
+              <label class="field"><span class="lb">测试接收人 UserID</span><input type="text" id="cf-testuser" placeholder="例如 zhangsan"></label>
+              <button class="btn sm" onclick="testWecom()">发送测试消息</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="box">
+          <h3>企业微信通讯录同步 / 扫码免登</h3>
+          <div class="notice warn">
+            <b>内网就能用：</b>点「一键同步通讯录」把全员姓名、部门、手机号、UserID 拉进本地名录，员工扫码时姓名和部门自动联想，应用消息推送也不用手填 UserID。只需服务器能访问 qyapi.weixin.qq.com，<b>不需要公网域名</b>。<br><br>
+            <b>扫码自动带出身份（免登）：</b>企业微信官方要求 OAuth 回调是<b>已备案的公网可信域名</b>，明确不支持 IP 和内网域名。填好公网地址并开启后，用<b>企业微信扫一扫</b>打开二维码可静默获取姓名和部门，同事一个字都不用填；相机或普通浏览器扫码仍走手动填表。<br><br>
+            <b>公网地址必须指向本工单系统的入口</b>（例如 <code>https://wo.example.com</code>），<b>不能填公司官网首页</b>，否则授权回调会跳到官网、免登必然失败。若系统装在纯内网服务器，需先由 IT 打通公网链路（反向代理 / 内网穿透 / 内外网 DNS 分流）；没打通之前请保持「关闭」，并改用上面的「一键同步通讯录」。
+          </div>
+          <div class="settings-grid">
+            <div>
+              <label class="field"><span class="lb">通讯录同步 Secret<span class="muted">（选填）</span></span>
+                <input type="text" id="cf-contact-secret" placeholder="留空则用上方应用的 Secret"></label>
+              <label class="field"><span class="lb">公网访问地址</span>
+                <input type="text" id="cf-public-base" placeholder="https://wo.example.com"></label>
+            </div>
+            <div>
+              <label class="field"><span class="lb">企微扫码免登</span>
+                <select id="cf-oauth-enabled"><option value="0">关闭（内网测试）</option><option value="1">开启（需可信域名）</option></select></label>
+              <button class="btn sm" id="btn-sync-wecom" onclick="syncWecomUsers()">一键同步通讯录</button>
+              <p class="hint" id="sync-result" style="margin-top:8px"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="row-end" style="margin-bottom:30px">
+          <button class="btn primary lg" id="btn-save-cfg" onclick="saveSettings()">保存全部设置</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>window.WO_TOKEN_KEY = 'wo_admin_token';</script>
+<script src="/static/common.js"></script>
+<script src="/static/qrcode.min.js"></script>
+<script src="/static/admin.js"></script>
+</body>
+</html>
